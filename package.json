@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "bun run main.ts",
-    "build": "bun build --compile --sourcemap --minify --target=bun main.ts --outfile=anthropic-ai-chat"
+    "build": "bun build --compile --target=bun main.ts --outfile=anthropic-ai-chat && rm -rf ./.*.bun-build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.19.0",
