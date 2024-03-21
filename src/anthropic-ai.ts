@@ -5,16 +5,15 @@ export const createAnthropicClient = (apiKey: string) =>
     apiKey,
   });
 
+export const DEFAULT_MODEL = "claude-3-opus-20240229"
+
 export const completionStream = async (params: {
   apiKey: string;
-  messages: Array<Anthropic.MessageParam>;
-  model?: string | null;
+  messageStreamParams:Anthropic.MessageStreamParams
 }) => {
   const client = createAnthropicClient(params.apiKey);
 
-  return client.messages.stream({
-    messages: params.messages,
-    model: params.model ?? "claude-3-opus-20240229",
-    max_tokens: 1000,
-  });
+  return client.messages.stream(
+    params.messageStreamParams,
+  );
 };

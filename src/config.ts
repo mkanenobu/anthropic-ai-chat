@@ -11,6 +11,7 @@ export const getConfigPath = () => {
 export const configSchema = z.object({
   apiKey: z.string().min(1),
   model: z.string().optional().nullable(),
+  systemPrompt: z.string().optional().nullable(),
 });
 
 export type Config = z.infer<typeof configSchema>;

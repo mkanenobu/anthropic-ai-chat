@@ -1,11 +1,12 @@
 import readline from "node:readline/promises";
-import { completionStream } from "./anthropic-ai.ts";
+import { completionStream, DEFAULT_MODEL } from "./anthropic-ai.ts";
 import process from "node:process";
 import Anthropic from "@anthropic-ai/sdk";
 import type { Config } from "./config.ts";
+import { countTokens } from "@anthropic-ai/tokenizer";
+import { FileHistory } from "./file-history.ts";
 
 const messageStreamHandler = async (
-  rl: readline.Interface,
   messageStream: Awaited<ReturnType<typeof completionStream>>,
 ) => {
   let buf = "";
@@ -14,9 +15,9 @@ const messageStreamHandler = async (
     if (msg.type === "content_block_delta") {
       const text = msg.delta.text;
       buf += text;
-      rl.write(text);
+      process.stdout.write(text);
     } else if (msg.type === "message_stop") {
-      rl.write("\n");
+      process.stdout.write("\n");
     }
   }
 
@@ -37,13 +38,17 @@ const historyToMessage = (
 };
 
 export const startRepl = async (config: Config) => {
+  const histories = await FileHistory.loadHistories();
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
+    tabSize: 2,
+    history: histories,
   });
 
-  // TODO: ファイルに保存
-  const history: Array<History> = [];
+  const fileHistory = new FileHistory();
+  const localHistory: Array<History> = [];
 
   while (true) {
     const rawInput = await rl.question("> ");
@@ -58,28 +63,37 @@ export const startRepl = async (config: Config) => {
         return;
       }
       case ".history": {
-        console.dir(history);
+        console.dir(localHistory);
         continue;
       }
       case ".clear": {
-        history.length = 0;
+        localHistory.length = 0;
         rl.write("History cleared.\n");
         continue;
       }
     }
 
-    history.push({ role: "user", content: input });
+    localHistory.push({ role: "user", content: input });
+    const saveHistoryTask = fileHistory.saveHistory(input);
 
     const stream = await completionStream({
       apiKey: process.env.ANTHROPIC_API_KEY ?? config.apiKey,
-      model: config.model,
-      messages: historyToMessage(history),
+      messageStreamParams: {
+        model: config.model ?? DEFAULT_MODEL,
+        messages: historyToMessage(localHistory),
+        max_tokens: 2000,
+        system: config.systemPrompt ?? undefined,
+      },
     });
 
-    const output = await messageStreamHandler(rl, stream);
-    history.push({
+    const output = await messageStreamHandler(stream);
+
+    console.log("\nResponse token count:", countTokens(output));
+    localHistory.push({
       role: "assistant",
       content: output,
     });
+
+    await saveHistoryTask;
   }
 };
