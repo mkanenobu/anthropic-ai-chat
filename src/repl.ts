@@ -6,6 +6,14 @@ import type { Config } from "./config.ts";
 import { countTokens } from "@anthropic-ai/tokenizer";
 import { FileHistory } from "./file-history.ts";
 
+export const HELP = `
+Commands:
+.exit     Exit the REPL
+.history  Show history
+.clear    Clear history
+.help     Show this help
+`.trim();
+
 const messageStreamHandler = async (
   messageStream: Awaited<ReturnType<typeof completionStream>>,
 ) => {
@@ -44,7 +52,7 @@ export const startRepl = async (config: Config) => {
     input: process.stdin,
     output: process.stdout,
     tabSize: 2,
-    history: histories,
+    history: histories.toReversed(),
   });
 
   const fileHistory = new FileHistory();
@@ -68,7 +76,11 @@ export const startRepl = async (config: Config) => {
       }
       case ".clear": {
         localHistory.length = 0;
-        rl.write("History cleared.\n");
+        console.log("History cleared");
+        continue;
+      }
+      case ".help": {
+        console.log(HELP);
         continue;
       }
     }
