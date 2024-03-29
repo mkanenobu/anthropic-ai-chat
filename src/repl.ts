@@ -88,6 +88,11 @@ export const startRepl = async (config: Config) => {
     localHistory.push({ role: "user", content: input });
     const saveHistoryTask = fileHistory.saveHistory(input);
 
+    console.log(
+      "\nRequest token count:",
+      countTokens(localHistory.map((h) => h.content).join("\n")),
+    );
+
     const stream = await completionStream({
       apiKey: process.env.ANTHROPIC_API_KEY ?? config.apiKey,
       messageStreamParams: {
