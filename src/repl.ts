@@ -89,7 +89,7 @@ export const startRepl = async (config: Config) => {
     const saveHistoryTask = fileHistory.saveHistory(input);
 
     console.log(
-      "\nRequest token count:",
+      "Request token count:",
       countTokens(localHistory.map((h) => h.content).join("\n")),
     );
 
